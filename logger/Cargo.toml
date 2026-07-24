@@ -1,0 +1,11 @@
+[package]
+name = "logger"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+log = "0.4"
+log4rs = { version = "1", features = ["console_appender", "file_appender", "json_encoder", "pattern_encoder"] }
+clap = { version = "4", features = ["derive", "env"] }
+procedural_env = { path = "../procedural_env" }
+config-registry = { path = "../config-registry" }
