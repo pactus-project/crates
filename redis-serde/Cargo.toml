@@ -12,7 +12,7 @@ keywords = ["redis", "serde", "serialization", "deserialization"]
 categories = ["encoding", "network-programming"]
 
 [dependencies]
-redis = "0.32"
+redis = "0.31"
 serde = "1"
 
 [dev-dependencies]
