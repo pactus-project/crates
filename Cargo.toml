@@ -1,0 +1,13 @@
+[workspace]
+resolver = "3"
+members = [
+    "config-registry",
+    "db-test-utils",
+    "diesel-paginate",
+    "event-message",
+    "logger",
+    "procedural_env",
+    "procedural_event",
+    "redis-serde",
+    "utils",
+]
