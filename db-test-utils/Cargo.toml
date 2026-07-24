@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 diesel = { version = "2", features = ["postgres"] }
-rand = "0.8"
+rand = "0.10"

@@ -105,7 +105,7 @@ impl RedisClient {
     }
 
     pub async fn get_async_connection(&self) -> Result<redis::aio::MultiplexedConnection> {
-        Ok(self.client.get_multiplexed_tokio_connection().await?)
+        Ok(self.client.get_multiplexed_async_connection().await?)
     }
 
     pub fn get_read_options(&self) -> StreamReadOptions {
