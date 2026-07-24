@@ -9,5 +9,6 @@ members = [
     "procedural_env",
     "procedural_event",
     "redis-serde",
+    "redis-stream-bus",
     "utils",
 ]
