@@ -205,7 +205,7 @@ impl<'a> Deserializer<'a> {
             Cow::Owned(Value::BulkString(bytes)) => Cow::Owned(String::from_utf8(bytes)?),
             Cow::Borrowed(Value::BulkString(bytes)) => Cow::Borrowed(str::from_utf8(bytes)?),
             _ => {
-                let msg = format!("Expected Data, got {:?}", &redis_value);
+                let msg = format!("Expected Data, got {:?}", redis_value);
                 return Err(Error::wrong_value(msg));
             }
         })

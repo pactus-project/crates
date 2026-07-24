@@ -206,7 +206,7 @@ impl RedisClient {
                 Ok(stream) => {
                     for stream_key in stream.keys {
                         for entry in stream_key.ids {
-                            trace!("[>][{}]: {}", &stream_key.key, entry.id);
+                            trace!("[>][{}]: {}", stream_key.key, entry.id);
 
                             let fields = Self::map_to_value(entry.map);
                             let entry = Entry::new(&stream_key.key, fields).with_id(entry.id);
