@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Expr, Lit};
+use syn::{DeriveInput, Expr, Lit, parse_macro_input};
 
 /// Custom derive macro to generate a method that copies env vars with a prefix.
 ///
