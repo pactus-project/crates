@@ -2,7 +2,6 @@
 resolver = "3"
 members = [
     "config-registry",
-    "diesel-paginate",
     "event-message",
     "logger",
     "procedural_env",
