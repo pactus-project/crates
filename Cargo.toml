@@ -1,6 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
+    "config-loader",
     "config-registry",
     "event-message",
     "logger",
