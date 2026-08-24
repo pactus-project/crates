@@ -1,6 +1,6 @@
 [package]
 name = "redis-serde"
-version = "0.16.0"
+version = "0.17.0"
 authors = ["ezeX development team"]
 description = "Serde serialization and deserialization for redis-rs."
 license = "MIT OR Apache-2.0"
@@ -12,7 +12,7 @@ keywords = ["redis", "serde", "serialization", "deserialization"]
 categories = ["encoding", "network-programming"]
 
 [dependencies]
-redis = "1.4"
+redis = "1.6"
 serde = "1"
 
 [dev-dependencies]

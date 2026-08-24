@@ -1,6 +1,6 @@
 [package]
 name = "redis_stream_bus"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 authors = ["ezex-io"]
 description = "Async Redis Streams client that simplifies publishing, reading, and acknowledging entries."
@@ -13,7 +13,7 @@ categories = ["database", "network-programming"]
 
 [dependencies]
 clap = { version = "4.6", features = ["derive", "env"] }
-redis = { version = "1.4", features = ["streams", "tokio-comp", "connection-manager"] }
+redis = { version = "1.6", features = ["streams", "tokio-comp", "connection-manager"] }
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 async-trait = "0.1"
@@ -26,7 +26,7 @@ simple_logger = "5.2"
 mockall = "0.15"
 redis-serde = { path = "../redis-serde" }
 tokio = { version = "1.53", features = ["macros", "rt-multi-thread"] }
-serial_test = "3.5"
+serial_test = "4.0"
 
 [[example]]
 name = "greeting"
