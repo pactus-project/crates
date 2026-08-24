@@ -1,0 +1,16 @@
+[package]
+name = "config"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde = "1"
+serde_ignored = "0.1"
+thiserror = "2"
+toml = "1"
+yaml_serde = "0.10"
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serial_test = "4"
+tempfile = "3"
