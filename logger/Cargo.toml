@@ -4,8 +4,21 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1"
+config-loader = { path = "../config-loader" }
 log = "0.4"
-log4rs = { version = "1", features = ["console_appender", "file_appender", "json_encoder", "pattern_encoder"] }
-clap = { version = "4", features = ["derive", "env"] }
-procedural_env = { path = "../procedural_env" }
-config-registry = { path = "../config-registry" }
+log4rs = { version = "1", features = [
+    "compound_policy",
+    "console_appender",
+    "fixed_window_roller",
+    "gzip",
+    "json_encoder",
+    "pattern_encoder",
+    "rolling_file_appender",
+    "size_trigger",
+    "time_trigger",
+] }
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3"

@@ -2,10 +2,8 @@
 resolver = "3"
 members = [
     "config-loader",
-    "config-registry",
     "event-message",
     "logger",
-    "procedural_env",
     "procedural_event",
     "redis-serde",
     "redis-stream-bus",
