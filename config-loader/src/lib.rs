@@ -8,7 +8,7 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use config::{load_from_yaml, Config};
+//! use config_loader::{load_from_yaml, Config};
 //! use serde::Deserialize;
 //!
 //! #[derive(Debug, Default, Deserialize)]
