@@ -5,6 +5,11 @@
 //! type implementing [`Config`], then [`Config::override_values`] is applied,
 //! and finally [`Config::basic_check`] validates the result.
 //!
+//! # Features
+//!
+//! - `yaml` (enabled by default): enables `load_from_yaml` and related APIs.
+//! - `toml`: enables `load_from_toml` and related APIs.
+//!
 //! # Example
 //!
 //! ```rust,no_run
@@ -34,9 +39,12 @@
 
 use serde::de::DeserializeOwned;
 use std::error::Error as StdError;
+#[cfg(any(feature = "yaml", feature = "toml"))]
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+#[cfg(any(feature = "yaml", feature = "toml"))]
+use std::path::Path;
+use std::path::PathBuf;
 use thiserror::Error;
 
 /// Errors that can occur while loading a configuration file.
@@ -102,6 +110,7 @@ pub trait Config: DeserializeOwned + Default {
     }
 
     /// Loads `Self` from a YAML file.
+    #[cfg(feature = "yaml")]
     fn load_from_yaml<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError>
     where
         Self: Sized,
@@ -110,6 +119,7 @@ pub trait Config: DeserializeOwned + Default {
     }
 
     /// Loads `Self` from a YAML file with the given options.
+    #[cfg(feature = "yaml")]
     fn load_from_yaml_with_options<P: AsRef<Path>>(
         path: P,
         options: LoadOptions,
@@ -121,6 +131,7 @@ pub trait Config: DeserializeOwned + Default {
     }
 
     /// Loads `Self` from a TOML file.
+    #[cfg(feature = "toml")]
     fn load_from_toml<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError>
     where
         Self: Sized,
@@ -129,6 +140,7 @@ pub trait Config: DeserializeOwned + Default {
     }
 
     /// Loads `Self` from a TOML file with the given options.
+    #[cfg(feature = "toml")]
     fn load_from_toml_with_options<P: AsRef<Path>>(
         path: P,
         options: LoadOptions,
@@ -143,11 +155,13 @@ pub trait Config: DeserializeOwned + Default {
 /// Loads `T` from the YAML file at `path`.
 ///
 /// See [`load_from_yaml_with_options`] to enable strict mode.
+#[cfg(feature = "yaml")]
 pub fn load_from_yaml<P: AsRef<Path>, T: Config>(path: P) -> Result<T, ConfigError> {
     load_from_yaml_with_options(path, LoadOptions::default())
 }
 
 /// Loads `T` from the YAML file at `path` with the given [`LoadOptions`].
+#[cfg(feature = "yaml")]
 pub fn load_from_yaml_with_options<P: AsRef<Path>, T: Config>(
     path: P,
     options: LoadOptions,
@@ -162,11 +176,13 @@ pub fn load_from_yaml_with_options<P: AsRef<Path>, T: Config>(
 /// Loads `T` from the TOML file at `path`.
 ///
 /// See [`load_from_toml_with_options`] to enable strict mode.
+#[cfg(feature = "toml")]
 pub fn load_from_toml<P: AsRef<Path>, T: Config>(path: P) -> Result<T, ConfigError> {
     load_from_toml_with_options(path, LoadOptions::default())
 }
 
 /// Loads `T` from the TOML file at `path` with the given [`LoadOptions`].
+#[cfg(feature = "toml")]
 pub fn load_from_toml_with_options<P: AsRef<Path>, T: Config>(
     path: P,
     options: LoadOptions,
@@ -182,6 +198,7 @@ pub fn load_from_toml_with_options<P: AsRef<Path>, T: Config>(
     })
 }
 
+#[cfg(any(feature = "yaml", feature = "toml"))]
 fn load<T, F>(path: &Path, parse: F) -> Result<T, ConfigError>
 where
     T: Config,
@@ -201,6 +218,7 @@ where
     Ok(config)
 }
 
+#[cfg(any(feature = "yaml", feature = "toml"))]
 fn deserialize<'de, D, T>(
     deserializer: D,
     path: &Path,
@@ -289,6 +307,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "yaml")]
     #[serial_test::serial]
     #[test]
     fn yaml_successful_load() {
@@ -304,6 +323,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "yaml")]
     #[serial_test::serial]
     #[test]
     fn yaml_strict_rejects_unknown_fields() {
@@ -321,6 +341,7 @@ mod tests {
         assert_eq!(cfg.key2, "value2");
     }
 
+    #[cfg(feature = "yaml")]
     #[serial_test::serial]
     #[test]
     fn yaml_basic_check_fails() {
@@ -330,6 +351,7 @@ mod tests {
         assert!(matches!(result, Err(ConfigError::Validation { .. })));
     }
 
+    #[cfg(feature = "yaml")]
     #[serial_test::serial]
     #[test]
     fn yaml_override_values() {
@@ -345,6 +367,7 @@ mod tests {
         unsafe { std::env::remove_var("YAML_KEY2_OVERRIDE") };
     }
 
+    #[cfg(feature = "toml")]
     #[serial_test::serial]
     #[test]
     fn toml_successful_load() {
@@ -360,6 +383,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "toml")]
     #[serial_test::serial]
     #[test]
     fn toml_strict_rejects_unknown_fields() {
@@ -377,6 +401,7 @@ mod tests {
         assert_eq!(cfg.key2, "value2");
     }
 
+    #[cfg(feature = "toml")]
     #[serial_test::serial]
     #[test]
     fn toml_basic_check_fails() {
@@ -386,6 +411,7 @@ mod tests {
         assert!(matches!(result, Err(ConfigError::Validation { .. })));
     }
 
+    #[cfg(feature = "toml")]
     #[serial_test::serial]
     #[test]
     fn toml_override_values() {

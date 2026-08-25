@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1"
-config-loader = { path = "../config-loader" }
+config-loader = { path = "../config-loader", features = ["yaml"] }
 log = "0.4"
 log4rs = { version = "1", features = [
     "compound_policy",

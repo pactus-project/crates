@@ -3,12 +3,17 @@ name = "config-loader"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["yaml"]
+yaml = ["dep:yaml_serde"]
+toml = ["dep:toml"]
+
 [dependencies]
 serde = "1"
 serde_ignored = "0.1"
 thiserror = "2"
-toml = "1"
-yaml_serde = "0.10"
+toml = { version = "1", optional = true }
+yaml_serde = { version = "0.10", optional = true }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
