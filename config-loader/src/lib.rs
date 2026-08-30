@@ -2,8 +2,8 @@
 //!
 //! This crate provides a [`Config`] trait and loaders for YAML and TOML files.
 //! It mirrors the Go `config` package: a configuration file is parsed into a
-//! type implementing [`Config`], then [`Config::override_values`] is applied,
-//! and finally [`Config::basic_check`] validates the result.
+//! type implementing [`Config`], then optional overrides are applied, and
+//! finally [`Config::basic_check`] validates the result.
 //!
 //! # Features
 //!
@@ -75,13 +75,25 @@ pub enum ConfigError {
     Validation { message: String },
 }
 
+/// Type of the optional override function applied after parsing.
+type OverrideFn<T> = Box<dyn Fn(&mut T)>;
+
 /// Options that control how a configuration file is loaded.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct LoadOptions {
+pub struct LoadOptions<T> {
     strict: bool,
+    override_fn: Option<OverrideFn<T>>,
 }
 
-impl LoadOptions {
+impl<T> Default for LoadOptions<T> {
+    fn default() -> Self {
+        Self {
+            strict: false,
+            override_fn: None,
+        }
+    }
+}
+
+impl<T> LoadOptions<T> {
     /// Creates the default load options.
     pub fn new() -> Self {
         Self::default()
@@ -93,6 +105,15 @@ impl LoadOptions {
         self
     }
 
+    /// Configures a function to apply overrides after parsing.
+    ///
+    /// The function receives the concrete config type, so no downcasting is
+    /// needed.
+    pub fn with_override(mut self, override_fn: impl Fn(&mut T) + 'static) -> Self {
+        self.override_fn = Some(Box::new(override_fn));
+        self
+    }
+
     /// Returns whether strict mode is enabled.
     pub fn is_strict(&self) -> bool {
         self.strict
@@ -101,9 +122,6 @@ impl LoadOptions {
 
 /// Trait implemented by configuration types that can be loaded from a file.
 pub trait Config: DeserializeOwned + Default {
-    /// Applies overrides after parsing, for example from environment variables.
-    fn override_values(&mut self) {}
-
     /// Validates the configuration after parsing and overrides.
     fn basic_check(&self) -> Result<(), String> {
         Ok(())
@@ -122,7 +140,7 @@ pub trait Config: DeserializeOwned + Default {
     #[cfg(feature = "yaml")]
     fn load_from_yaml_with_options<P: AsRef<Path>>(
         path: P,
-        options: LoadOptions,
+        options: LoadOptions<Self>,
     ) -> Result<Self, ConfigError>
     where
         Self: Sized,
@@ -143,7 +161,7 @@ pub trait Config: DeserializeOwned + Default {
     #[cfg(feature = "toml")]
     fn load_from_toml_with_options<P: AsRef<Path>>(
         path: P,
-        options: LoadOptions,
+        options: LoadOptions<Self>,
     ) -> Result<Self, ConfigError>
     where
         Self: Sized,
@@ -164,12 +182,12 @@ pub fn load_from_yaml<P: AsRef<Path>, T: Config>(path: P) -> Result<T, ConfigErr
 #[cfg(feature = "yaml")]
 pub fn load_from_yaml_with_options<P: AsRef<Path>, T: Config>(
     path: P,
-    options: LoadOptions,
+    options: LoadOptions<T>,
 ) -> Result<T, ConfigError> {
     let path = path.as_ref();
-    load(path, |content| {
+    load(path, &options, |content| {
         let deserializer = yaml_serde::Deserializer::from_str(content);
-        deserialize::<_, T>(deserializer, path, options)
+        deserialize::<_, T>(deserializer, path, &options)
     })
 }
 
@@ -185,21 +203,21 @@ pub fn load_from_toml<P: AsRef<Path>, T: Config>(path: P) -> Result<T, ConfigErr
 #[cfg(feature = "toml")]
 pub fn load_from_toml_with_options<P: AsRef<Path>, T: Config>(
     path: P,
-    options: LoadOptions,
+    options: LoadOptions<T>,
 ) -> Result<T, ConfigError> {
     let path = path.as_ref();
-    load(path, |content| {
+    load(path, &options, |content| {
         let deserializer =
             toml::Deserializer::parse(content).map_err(|source| ConfigError::Parse {
                 path: path.to_path_buf(),
                 source: Box::new(source),
             })?;
-        deserialize::<_, T>(deserializer, path, options)
+        deserialize::<_, T>(deserializer, path, &options)
     })
 }
 
 #[cfg(any(feature = "yaml", feature = "toml"))]
-fn load<T, F>(path: &Path, parse: F) -> Result<T, ConfigError>
+fn load<T, F>(path: &Path, options: &LoadOptions<T>, parse: F) -> Result<T, ConfigError>
 where
     T: Config,
     F: FnOnce(&str) -> Result<T, ConfigError>,
@@ -210,7 +228,9 @@ where
     })?;
 
     let mut config = parse(&content)?;
-    config.override_values();
+    if let Some(override_fn) = &options.override_fn {
+        override_fn(&mut config);
+    }
     config
         .basic_check()
         .map_err(|message| ConfigError::Validation { message })?;
@@ -222,7 +242,7 @@ where
 fn deserialize<'de, D, T>(
     deserializer: D,
     path: &Path,
-    options: LoadOptions,
+    options: &LoadOptions<T>,
 ) -> Result<T, ConfigError>
 where
     D: serde::Deserializer<'de>,
@@ -270,20 +290,6 @@ mod tests {
     }
 
     impl Config for TestConfig {
-        fn override_values(&mut self) {
-            if let Ok(value) = std::env::var("YAML_KEY2_OVERRIDE")
-                && !value.is_empty()
-            {
-                self.key2 = value;
-            }
-
-            if let Ok(value) = std::env::var("TOML_KEY2_OVERRIDE")
-                && !value.is_empty()
-            {
-                self.key2 = value;
-            }
-        }
-
         fn basic_check(&self) -> Result<(), String> {
             if self.key1.is_empty() || self.key2.is_empty() {
                 return Err("key1 and key2 must not be empty".to_string());
@@ -308,7 +314,6 @@ mod tests {
     }
 
     #[cfg(feature = "yaml")]
-    #[serial_test::serial]
     #[test]
     fn yaml_successful_load() {
         let file = TempFile::new("config.yaml", "key1: value1\nkey2: value2\n");
@@ -324,7 +329,6 @@ mod tests {
     }
 
     #[cfg(feature = "yaml")]
-    #[serial_test::serial]
     #[test]
     fn yaml_strict_rejects_unknown_fields() {
         let file = TempFile::new(
@@ -342,7 +346,6 @@ mod tests {
     }
 
     #[cfg(feature = "yaml")]
-    #[serial_test::serial]
     #[test]
     fn yaml_basic_check_fails() {
         let file = TempFile::new("config.yaml", "key1: value1\n");
@@ -352,23 +355,20 @@ mod tests {
     }
 
     #[cfg(feature = "yaml")]
-    #[serial_test::serial]
     #[test]
     fn yaml_override_values() {
-        // SAFETY: uses a dedicated env var that no other test reads.
-        unsafe { std::env::set_var("YAML_KEY2_OVERRIDE", "overridden2") };
-
         let file = TempFile::new("config.yaml", "key1: value1\nkey2: value2\n");
-        let cfg: TestConfig = load_from_yaml(file.path).unwrap();
+        let cfg: TestConfig = load_from_yaml_with_options(
+            &file.path,
+            LoadOptions::new()
+                .with_override(|cfg: &mut TestConfig| cfg.key2 = "overridden2".to_string()),
+        )
+        .unwrap();
 
         assert_eq!(cfg.key2, "overridden2");
-
-        // SAFETY: removes the dedicated env var created by this test.
-        unsafe { std::env::remove_var("YAML_KEY2_OVERRIDE") };
     }
 
     #[cfg(feature = "toml")]
-    #[serial_test::serial]
     #[test]
     fn toml_successful_load() {
         let file = TempFile::new("config.toml", "key1 = 'value1'\nkey2 = 'value2'\n");
@@ -384,7 +384,6 @@ mod tests {
     }
 
     #[cfg(feature = "toml")]
-    #[serial_test::serial]
     #[test]
     fn toml_strict_rejects_unknown_fields() {
         let file = TempFile::new(
@@ -402,7 +401,6 @@ mod tests {
     }
 
     #[cfg(feature = "toml")]
-    #[serial_test::serial]
     #[test]
     fn toml_basic_check_fails() {
         let file = TempFile::new("config.toml", "key1 = 'value1'\n");
@@ -412,18 +410,16 @@ mod tests {
     }
 
     #[cfg(feature = "toml")]
-    #[serial_test::serial]
     #[test]
     fn toml_override_values() {
-        // SAFETY: uses a dedicated env var that no other test reads.
-        unsafe { std::env::set_var("TOML_KEY2_OVERRIDE", "overridden2") };
-
         let file = TempFile::new("config.toml", "key1 = 'value1'\nkey2 = 'value2'\n");
-        let cfg: TestConfig = load_from_toml(file.path).unwrap();
+        let cfg: TestConfig = load_from_toml_with_options(
+            &file.path,
+            LoadOptions::new()
+                .with_override(|cfg: &mut TestConfig| cfg.key2 = "overridden2".to_string()),
+        )
+        .unwrap();
 
         assert_eq!(cfg.key2, "overridden2");
-
-        // SAFETY: removes the dedicated env var created by this test.
-        unsafe { std::env::remove_var("TOML_KEY2_OVERRIDE") };
     }
 }
