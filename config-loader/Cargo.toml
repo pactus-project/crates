@@ -17,5 +17,4 @@ yaml_serde = { version = "0.10", optional = true }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
-serial_test = "4"
 tempfile = "3"
